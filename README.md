@@ -22,6 +22,8 @@ Please examine the files "stud_port_class.csv" and "stud_indices.csv". These are
    
 - stud_indices.csv: Designates each feature as being the id, target, or belonging to the unchangeable, indirectly changeable, or directly changeable feature groups. There are also costs +/- imposed and direction of change. Costs and directions must be specified for each directly changeable feature.
 
+The files are processed "Climate Weather Surface of Brazil - Hourly" dataset data, originally found on Kaggle at this [link](https://www.kaggle.com/datasets/PROPPG-PPG/hourly-weather-surface-brazil-southeast-region).
+
 **To run the code:**
 
 1. Use train.py to train a "regular" model. Please see the file "example_train.sh" for an example on how to use this code. Also please examine train.py for additional parameters that can be specified. The data will automatically be randomly partitioned into train/validation/test with the test set being used for inverse classification later on. A pickle file will be created that holds all of the necessary data and parameters to be used during the inverse classification process.
