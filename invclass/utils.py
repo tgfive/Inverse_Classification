@@ -174,8 +174,8 @@ def load_data(data_path,data_file,file_type="csv",unchange_indices=[],indirect_i
 
     dset_ids = dset_df[id_col_name].values
     dset_targets = dset_df[target_col_name].values
-    X_data = dset_df.drop([id_col_name, target_col_name],axis=1)
-    
+    #X_data = dset_df.drop([id_col_name, target_col_name],axis=1)
+    X_data = dset_df.drop([id_col_name],axis=1)
 
     unchange_indices = [X_data.columns.get_loc(c) for c in unchange_col_names]
     indirect_indices = [X_data.columns.get_loc(c) for c in indirect_col_names]
@@ -189,7 +189,7 @@ def load_data(data_path,data_file,file_type="csv",unchange_indices=[],indirect_i
 
     if imbal_classes == False:    
 
-        nfull = dset_ind.shape[0]
+        nfull = dset_ids.shape[0]
         test_n = round(nfull*test_prop)
         val_n = round(nfull*val_prop)
         all_indices = [i for i in range(nfull)]
