@@ -13,7 +13,6 @@ from absl import flags,app #Consistent with TF 2.0 API
 
 FLAGS = flags.FLAGS
 
-
 def make_model(data_dict,hidden_units,indirect_model,categorical=True):
 
     train_dat = data_dict['train']
@@ -51,8 +50,6 @@ def make_model(data_dict,hidden_units,indirect_model,categorical=True):
             model.add(tf.keras.layers.Dense(1,input_dim=in_dim,activation='relu'))
         model.compile(loss='mse',optimizer=opt)
     return model
-
-
 
 
 def load_indices(data_path,util_file):
@@ -174,8 +171,7 @@ def load_data(data_path,data_file,file_type="csv",unchange_indices=[],indirect_i
 
     dset_ids = dset_df[id_col_name].values
     dset_targets = dset_df[target_col_name].values
-    #X_data = dset_df.drop([id_col_name, target_col_name],axis=1)
-    X_data = dset_df.drop([id_col_name],axis=1)
+    X_data = dset_df.drop([id_col_name, target_col_name],axis=1)
 
     unchange_indices = [X_data.columns.get_loc(c) for c in unchange_col_names]
     indirect_indices = [X_data.columns.get_loc(c) for c in indirect_col_names]

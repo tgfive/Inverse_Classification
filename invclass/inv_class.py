@@ -244,6 +244,8 @@ def main(argv):
     else:
         inv_inds = [i for i in range(X_inv.shape[0])]
     
+    print(X_inv[inv_inds])
+
     #Take gradient of all instances to test for zero gradients
     grads = inv_gradient(reg_model,X_inv[inv_inds])
     nz_grads = np.nonzero(grads)

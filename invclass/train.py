@@ -42,7 +42,7 @@ flags.DEFINE_string('data_file', '', 'Name of the file containing the data. Requ
 flags.DEFINE_string('file_type', 'csv', 'Type of data file. Either "csv" or "pkl". Optional (default: "csv")')
 flags.DEFINE_string('util_file', '', 'Name of the file containing index designations. Required.')
 flags.DEFINE_string('save_file', '', 'Name of the file to save the processed data to. Optional.')
-flags.DEFINE_boolean('classification', True, 'Classification or regression. Default: True (classificaiton).')
+flags.DEFINE_boolean('classification', False, 'Classification or regression. Default: False (classificaiton).')
 flags.DEFINE_integer('epochs', 200, 'Number of epochs to train the model. Optional (default: 200)')
 flags.DEFINE_float('dropout', 0.0, 'Dropout rate (1 - keep probability). Optional (default: 0)')
 flags.DEFINE_integer('hidden_units', 20, 'Number of hidden nodes in hidden layer. If 0, then logistic regression\
@@ -101,13 +101,16 @@ def train(data_dict):
 
         return
     
-    y_train = tf.keras.utils.to_categorical(train_dat['target'])
-    y_val = tf.keras.utils.to_categorical(val_dat['target'])
+    if FLAGS.classification:
+        y_train = tf.keras.utils.to_categorical(train_dat['target'])
+        y_val = tf.keras.utils.to_categorical(val_dat['target'])
+    else:
+        y_train = Y_train
+        y_val = Y_val
     history = model.fit(train_dat['X'], y_train, epochs=FLAGS.epochs, batch_size=64,
                        validation_data=(val_dat['X'],y_val),
                        callbacks = [csv_logger])
     
-
     model.save(log_dir()+"model.h5")
 
     return
