@@ -32,7 +32,6 @@ def inv_gradient(model, x):
             loss = model(x_tensor)[:,1]
         else:
             loss = model(x_tensor)#Regression is a single node
-            print(loss)
         return t.gradient(loss,x_tensor).numpy()
 
 def inv_gradient_ind(model, x, num_loss=0):
@@ -44,7 +43,6 @@ def inv_gradient_ind(model, x, num_loss=0):
         with tf.GradientTape() as t:
             t.watch(x_tensor)
             loss = model(x_tensor)[:,i]
-            print(loss)
             grad.append(t.gradient(loss,x_tensor).numpy()[0])
 
     return np.array(grad)

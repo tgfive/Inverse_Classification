@@ -71,10 +71,11 @@ def inv_class(model, ind_model, x, param_dict):
     xU_xD = np.array([np.hstack([x[xU_i],x[xD_i]])])
     #Initial prediction of indirect
     xI_est = ind_model.predict(xU_xD)[0]
+    #print(ind_model.predict(xU_xD))
     #Initial prediction using indirect    
     x_init = np.array([np.hstack([x[xU_i],xI_est,x[xD_i]])])    
-        
-    y_hat_init = model.predict(x_init)[0][1]
+
+    y_hat_init = model.predict(x_init)[0]#[1]
 
 
     #Define the "previous" budget value for use during optimization
@@ -168,7 +169,7 @@ def inv_class(model, ind_model, x, param_dict):
             #Re-evaluate obj function using xI_est and xD_opt
             full_opt_x = np.array([np.hstack([x[xU_i],xI_est,opt_xD])])
 
-            cObj = model.predict(full_opt_x)[0][1]
+            cObj = model.predict(full_opt_x)[0]#[1]
             
             while (cObj > obj_vect[-1]) and gStep < 1000:
                 #In case we have haven't exceed the previous iteration
@@ -204,7 +205,7 @@ def inv_class(model, ind_model, x, param_dict):
                 #Re-evaluate obj function using xI_est and xD_opt
                 full_opt_x = np.array([np.hstack([x[xU_i],xI_est,opt_xD])])
 
-                cObj = model.predict(full_opt_x)[0][1]
+                cObj = model.predict(full_opt_x)[0]#[1]
 
 
             obj_vect.append(cObj)
@@ -243,8 +244,6 @@ def main(argv):
         inv_inds = np.where(inv_data['target']==1)[0]
     else:
         inv_inds = [i for i in range(X_inv.shape[0])]
-    
-    print(X_inv[inv_inds])
 
     #Take gradient of all instances to test for zero gradients
     grads = inv_gradient(reg_model,X_inv[inv_inds])

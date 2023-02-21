@@ -191,6 +191,9 @@ def load_data(data_path,data_file,file_type="csv",unchange_indices=[],indirect_i
         all_indices = [i for i in range(nfull)]
         val_test_indices = np.random.choice(nfull,size=test_n+val_n,replace=False)
 
+        print(all_indices)
+        print(val_test_indices)
+
         val_indices = [val_test_indices[i] for i in range(val_n)]
         test_indices = [val_test_indices[i] for i in range(val_n,val_n+test_n)]
 
@@ -198,7 +201,7 @@ def load_data(data_path,data_file,file_type="csv",unchange_indices=[],indirect_i
 
 
     else:
-
+        
         pos_inds = np.where(dset_targets == 1)[0]
         neg_inds = np.where(dset_targets == 0)[0]   
   

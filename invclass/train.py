@@ -105,8 +105,9 @@ def train(data_dict):
         y_train = tf.keras.utils.to_categorical(train_dat['target'])
         y_val = tf.keras.utils.to_categorical(val_dat['target'])
     else:
-        y_train = Y_train
-        y_val = Y_val
+        y_train = train_dat['X']
+        y_val = val_dat['X']
+    
     history = model.fit(train_dat['X'], y_train, epochs=FLAGS.epochs, batch_size=64,
                        validation_data=(val_dat['X'],y_val),
                        callbacks = [csv_logger])
