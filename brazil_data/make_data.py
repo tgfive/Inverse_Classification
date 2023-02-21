@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import random
 import os
 
 print(os.getcwd())
@@ -7,6 +8,9 @@ print(os.getcwd())
 OUT = 'brazil_data/brazil_weather'
 FILE = 'brazil_data/central_west.csv'
 DESC = 'brazil_data/columns_description.csv'
+
+SAMPLE = True
+SAMPLE_SIZE = 650
 
 df = pd.read_csv(FILE)
 col_desc = pd.read_csv(DESC)
@@ -65,11 +69,17 @@ df['Year cos'] = np.cos(timestamp_s * (2 * np.pi / year))
 
 df['target'] = df.sum(axis=1)
 
-df = (df - df.min()) / (df.max() - df.min())
+#df = (df - df.min()) / (df.max() - df.min())
 
 df = df[['lat', 'lon', 'elvt', 'Day sin', 'Day cos', 'Year sin', 'Year cos',
     'smax', 'smin', 'tmax', 'tmin', 'dmax', 'dmin', 'hmax', 'hmin', 'Gx', 'Gy',
     'prcp', 'stp', 'gbrd', 'temp', 'dewp', 'hmdy', 'Wx', 'Wy',
     'target']]
+
+if SAMPLE:
+    inds = [random.randint(0,len(df.index)) for iter in range(SAMPLE_SIZE)]
+    df = df.iloc[inds]
+
+df.index = np.arange(1, len(df.index)+1)
 
 df.to_csv(OUT+'.csv', index=True)
