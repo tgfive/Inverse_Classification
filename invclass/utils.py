@@ -29,6 +29,7 @@ def make_model(data_dict,hidden_units,indirect_model,categorical=True):
             model.add(tf.keras.layers.Dense(out_dim,input_dim=in_dim,activation='relu'))
         
         model.compile(loss="mse",optimizer=opt, metrics=["mse","mae"])
+        model.summary()
         return model
 
     #For training regular models
@@ -45,10 +46,11 @@ def make_model(data_dict,hidden_units,indirect_model,categorical=True):
     else:
         if FLAGS.hidden_units > 0:
             model.add(tf.keras.layers.Dense(FLAGS.hidden_units,input_dim=in_dim,activation='relu'))
-            model.add(tf.keras.layers.Dense(1,input_dim=FLAGS.hidden_units,activation='relu'))
+            model.add(tf.keras.layers.Dense(in_dim,input_dim=FLAGS.hidden_units,activation='relu'))
         else:
-            model.add(tf.keras.layers.Dense(1,input_dim=in_dim,activation='relu'))
+            model.add(tf.keras.layers.Dense(in_dim,input_dim=in_dim,activation='relu'))
         model.compile(loss='mse',optimizer=opt)
+        model.summary()
     return model
 
 
@@ -201,7 +203,7 @@ def load_data(data_path,data_file,file_type="csv",unchange_indices=[],indirect_i
 
 
     else:
-        
+
         pos_inds = np.where(dset_targets == 1)[0]
         neg_inds = np.where(dset_targets == 0)[0]   
   
@@ -290,5 +292,3 @@ def load_data(data_path,data_file,file_type="csv",unchange_indices=[],indirect_i
             pkl.dump(return_dict,sF)
 
     return return_dict
-
-

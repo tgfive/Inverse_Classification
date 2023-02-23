@@ -75,7 +75,7 @@ def inv_class(model, ind_model, x, param_dict):
     #Initial prediction using indirect    
     x_init = np.array([np.hstack([x[xU_i],xI_est,x[xD_i]])])    
 
-    y_hat_init = model.predict(x_init)[0]#[1]
+    y_hat_init = model.predict(x_init)[0]
 
 
     #Define the "previous" budget value for use during optimization
@@ -88,7 +88,7 @@ def inv_class(model, ind_model, x, param_dict):
     
     xD_opt_mat[0] = x[xD_i]
     xI_opt_mat[0] = xI_est
-    opt_obj_vect[0] = y_hat_init
+    opt_obj_vect = [y_hat_init]
   
 
     #Compute initial gradients for setting the bounds of ambig. d
@@ -106,13 +106,12 @@ def inv_class(model, ind_model, x, param_dict):
     #Set bounds and d, c
     d, c, l, u = set_bounds(x,-1*opt_grad,param_dict)
 
-
     #Iterate over the budget values
     bud_iter = 0
     for b in budgets: 
         bud_iter+=1
         #Set iteration parameters
-        diff = np.inf #Obj func difference between cur and prev iteration of grad descent
+        diff = [np.inf] #Obj func difference between cur and prev iteration of grad descent
         tot_iters = 0 #Cur num iters of grad descent
         best_obj = [y_hat_init] #Cur objective function value
         if bud_iter == 1: #If this is the first budget...
@@ -131,12 +130,10 @@ def inv_class(model, ind_model, x, param_dict):
         #Set b to the difference between the last b and the current
         #b= b-prev_B
         #Create a vector to hold obj func evaluations
-        obj_vect = [opt_obj_vect[0]]
+        obj_vect = [opt_obj_vect]
 
-        while tot_iters < FLAGS.max_iters and diff > FLAGS.grad_tol:
-
-        
-
+        while tot_iters < FLAGS.max_iters and (max(diff) > FLAGS.grad_tol):
+            
             #Compute the gradient of the model wrt. x
             reg_grad_full = inv_gradient(model,full_opt_x)[0]
             #Compute the gradient of the ind_model
@@ -169,9 +166,9 @@ def inv_class(model, ind_model, x, param_dict):
             #Re-evaluate obj function using xI_est and xD_opt
             full_opt_x = np.array([np.hstack([x[xU_i],xI_est,opt_xD])])
 
-            cObj = model.predict(full_opt_x)[0]#[1]
-            
-            while (cObj > obj_vect[-1]) and gStep < 1000:
+            cObj = model.predict(full_opt_x)[0]
+
+            while (cObj > obj_vect).any() and gStep < 1000:
                 #In case we have haven't exceed the previous iteration
                 gStep = gStep * 2
                 
@@ -210,14 +207,18 @@ def inv_class(model, ind_model, x, param_dict):
 
             obj_vect.append(cObj)
             #Check for objective convergence
-            diff = (obj_vect[-2]-obj_vect[-1])/obj_vect[-2]
+            diff = ((obj_vect[-2]-obj_vect[-1])/obj_vect[-2])[0]
+            print(diff)
+            print(max(diff))
             #Decrement gradient step
             gStep = gStep/1.5
 
         #Now set appropriate vars for next budget iteration
         xD_opt_mat[bud_iter] = opt_xD
         xI_opt_mat[bud_iter] = xI_est
-        if obj_vect[-1] > obj_vect[-2]:
+        print(opt_obj_vect)
+        print(obj_vect)
+        if (obj_vect[-1] > obj_vect[-2]).any():
             opt_obj_vect[bud_iter] = obj_vect[-2]
         else:
             opt_obj_vect[bud_iter] = obj_vect[-1]

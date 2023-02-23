@@ -21,8 +21,8 @@ import os
 import json
 import pickle as pkl
 from absl import flags,app #Consistent with TF 2.0 API
-from sklearn.metrics import accuracy_score
-from tensorflow.keras import backend as K
+#from sklearn.metrics import accuracy_score
+#from tensorflow.keras import backend as K
 
 from invclass.utils import load_data, load_indices, make_model
 
