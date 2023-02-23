@@ -168,7 +168,10 @@ def inv_class(model, ind_model, x, param_dict):
 
             cObj = model.predict(full_opt_x)[0]
 
-            while (cObj > obj_vect).any() and gStep < 1000:
+            print(cObj)
+            print(obj_vect)
+
+            while (cObj > obj_vect[-1]).any() and gStep < 1000:
                 #In case we have haven't exceed the previous iteration
                 gStep = gStep * 2
                 
@@ -208,8 +211,6 @@ def inv_class(model, ind_model, x, param_dict):
             obj_vect.append(cObj)
             #Check for objective convergence
             diff = ((obj_vect[-2]-obj_vect[-1])/obj_vect[-2])[0]
-            print(diff)
-            print(max(diff))
             #Decrement gradient step
             gStep = gStep/1.5
 
