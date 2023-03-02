@@ -18,7 +18,6 @@ IEEE, 2017.
 """
 
 import numpy as np
-import sys
 
 def proj_simplex(v, z, c, l, u, tau=0.0001, max_iter=1000):
 	"""
@@ -65,4 +64,3 @@ def proj_simplex(v, z, c, l, u, tau=0.0001, max_iter=1000):
     
 def Eval(v, c, l, u, theta):
 	return sum(np.multiply(c,np.maximum(np.maximum(np.minimum(v-theta*c,u),l),0)))
-

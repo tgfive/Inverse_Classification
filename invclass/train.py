@@ -15,20 +15,12 @@ import time
 
 import tensorflow as tf
 import numpy as np
-import scipy.sparse as sp
-import sys
 import os
-import json
 import pickle as pkl
 from absl import flags,app #Consistent with TF 2.0 API
-#from sklearn.metrics import accuracy_score
-#from tensorflow.keras import backend as K
+from tensorflow.keras import backend as K
 
 from invclass.utils import load_data, load_indices, make_model
-
-
-seed = 1234
-tf.random.set_seed(seed)
 
 
 # Settings
@@ -42,15 +34,12 @@ flags.DEFINE_string('data_file', '', 'Name of the file containing the data. Requ
 flags.DEFINE_string('file_type', 'csv', 'Type of data file. Either "csv" or "pkl". Optional (default: "csv")')
 flags.DEFINE_string('util_file', '', 'Name of the file containing index designations. Required.')
 flags.DEFINE_string('save_file', '', 'Name of the file to save the processed data to. Optional.')
-flags.DEFINE_boolean('classification', False, 'Classification or regression. Default: False (classificaiton).')
 flags.DEFINE_integer('epochs', 200, 'Number of epochs to train the model. Optional (default: 200)')
 flags.DEFINE_float('dropout', 0.0, 'Dropout rate (1 - keep probability). Optional (default: 0)')
 flags.DEFINE_integer('hidden_units', 20, 'Number of hidden nodes in hidden layer. If 0, then logistic regression\
                       model is used. Optional (default: 10).')
 flags.DEFINE_boolean('indirect_model', False, 'Whether or not we are training a model to predict the\
                      indirect features or not. Default: False')
-
-flags.DEFINE_boolean('class_imb',False, 'Boolean. Whether class imbalance exists. Default: False')
 flags.DEFINE_float('val_prop',0.10,'Proportion of dataset to use for validation. Default: 0.10')
 flags.DEFINE_float('test_prop',0.10,'Proportion of dataset to use for testing. Default: 0.10')
 flags.DEFINE_float('weight_decay',0.,'Weight decay on l2 regularization of model weights.')
@@ -81,7 +70,7 @@ def train(data_dict):
     
     train_dat = data_dict['train']
     val_dat = data_dict['val']
-    model = make_model(data_dict,FLAGS.hidden_units,FLAGS.indirect_model,FLAGS.classification)
+    model = make_model(data_dict,FLAGS.indirect_model)
     csv_logger = tf.keras.callbacks.CSVLogger(log_dir()+'training.log')
     if FLAGS.indirect_model:
         tr_X = train_dat['X']
@@ -101,17 +90,13 @@ def train(data_dict):
 
         return
     
-    if FLAGS.classification:
-        y_train = tf.keras.utils.to_categorical(train_dat['target'])
-        y_val = tf.keras.utils.to_categorical(val_dat['target'])
-    else:
-        y_train = train_dat['X']
-        y_val = val_dat['X']
-    
+    y_train = tf.keras.utils.to_categorical(train_dat['target'])
+    y_val = tf.keras.utils.to_categorical(val_dat['target'])
     history = model.fit(train_dat['X'], y_train, epochs=FLAGS.epochs, batch_size=64,
                        validation_data=(val_dat['X'],y_val),
                        callbacks = [csv_logger])
     
+
     model.save(log_dir()+"model.h5")
 
     return
@@ -123,8 +108,8 @@ def main(argv):
 
     data_dict = load_data(FLAGS.data_path,FLAGS.data_file,FLAGS.file_type,
                           unch_indices,indir_indices,dir_indices,id_ind=id_ind,
-                          target_ind=target_ind,seed=seed,imbal_classes=FLAGS.class_imb,
-                          val_prop=FLAGS.val_prop,test_prop=FLAGS.test_prop,opt_params=opt_params,
+                          target_ind=target_ind,val_prop=FLAGS.val_prop,
+                          test_prop=FLAGS.test_prop,opt_params=opt_params,
                           save_file=FLAGS.save_file)
 
     print("Done loading. Training model...")

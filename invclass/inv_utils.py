@@ -10,41 +10,44 @@ __email__ = "michael.lash@ku.edu"
 __status__ = "Prototype" #"Development", "Production"
 
 import numpy as np
-import scipy as sp
-import pandas as pd
 import pickle as pkl
-import csv
-import sys
 import tensorflow as tf
 import copy
-from absl import flags,app #Consistent with TF 2.0 API
+from absl import flags #Consistent with TF 2.0 API
 
 FLAGS = flags.FLAGS
 
 def inv_gradient(model, x):
-
+    print('INV_GRADIENT')
 
     x_tensor = tf.convert_to_tensor(x, dtype=tf.float32)
+    #print('x_tensor:', x_tensor)
 
     with tf.GradientTape() as t:
         t.watch(x_tensor)
-        if FLAGS.classification:#Diff wrt. positive softmax node
-            loss = model(x_tensor)[:,1]
-        else:
-            loss = model(x_tensor)#Regression is a single node
-        return t.gradient(loss,x_tensor).numpy()
+        loss = model(x_tensor)#Regression is a single node
+        #loss = tf.concat([loss, loss], 1)
+        #print('loss:', loss)    
+        grads = t.gradient(loss,x_tensor).numpy()
+        #print('grads:', grads)
+        return grads
 
 def inv_gradient_ind(model, x, num_loss=0):
+    print('INV_GRADIENT_IND')
 
     x_tensor = tf.convert_to_tensor(x, dtype=tf.float32)
+    #print('x_tensor:', x_tensor)
 
     grad = []
     for i in range(num_loss):
         with tf.GradientTape() as t:
             t.watch(x_tensor)
-            loss = model(x_tensor)[:,i]
-            grad.append(t.gradient(loss,x_tensor).numpy()[0])
+            #print('output:', model(x_tensor))
 
+            loss = model(x_tensor)[:,i]
+            #print('loss:', loss)
+            grad.append(t.gradient(loss,x_tensor).numpy()[0])
+    #print('grad:', np.array(grad))
     return np.array(grad)
 
 
@@ -77,7 +80,7 @@ def set_parameters(data_dict):
 def save_result(result_dict):
 
     direct = FLAGS.data_path
-    prefix_pos = "pos_only" if FLAGS.pos_only else ""
+    prefix_pos = ""
     prefix_data = FLAGS.data_file.split(".")[0]
     save_name = direct+prefix_pos+"-"+prefix_data+"-"+FLAGS.save_file
     with open(save_name, 'wb') as sF:

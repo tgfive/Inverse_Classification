@@ -2,18 +2,17 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
-import scipy as sp
 import pandas as pd
 import pickle as pkl
 import csv
-import sys
 import tensorflow as tf
 
-from absl import flags,app #Consistent with TF 2.0 API
+from absl import flags #Consistent with TF 2.0 API
 
 FLAGS = flags.FLAGS
 
-def make_model(data_dict,hidden_units,indirect_model,categorical=True):
+
+def make_model(data_dict,indirect_model):
 
     train_dat = data_dict['train']
     opt = tf.keras.optimizers.Adam(learning_rate=FLAGS.learning_rate)
@@ -29,28 +28,19 @@ def make_model(data_dict,hidden_units,indirect_model,categorical=True):
             model.add(tf.keras.layers.Dense(out_dim,input_dim=in_dim,activation='relu'))
         
         model.compile(loss="mse",optimizer=opt, metrics=["mse","mae"])
-        model.summary()
+
         return model
 
     #For training regular models
     in_dim = train_dat['X'].shape[1]
     model = tf.keras.models.Sequential()
-    if categorical:
-        if FLAGS.hidden_units > 0:
-            model.add(tf.keras.layers.Dense(FLAGS.hidden_units,input_dim=in_dim,activation='relu'))
-            model.add(tf.keras.layers.Dense(2,input_dim=FLAGS.hidden_units,activation='softmax'))
-        else:
-            model.add(tf.keras.layers.Dense(2,input_dim=in_dim,activation='softmax'))
-        model.compile(loss='binary_crossentropy',optimizer=opt, 
-                      metrics=[tf.keras.metrics.AUC(),tf.keras.metrics.BinaryAccuracy()])
+    if FLAGS.hidden_units > 0:
+        model.add(tf.keras.layers.Dense(FLAGS.hidden_units,input_dim=in_dim,activation='relu'))
+        model.add(tf.keras.layers.Dense(1,input_dim=FLAGS.hidden_units,activation='relu'))
     else:
-        if FLAGS.hidden_units > 0:
-            model.add(tf.keras.layers.Dense(FLAGS.hidden_units,input_dim=in_dim,activation='relu'))
-            model.add(tf.keras.layers.Dense(in_dim,input_dim=FLAGS.hidden_units,activation='relu'))
-        else:
-            model.add(tf.keras.layers.Dense(in_dim,input_dim=in_dim,activation='relu'))
-        model.compile(loss='mse',optimizer=opt)
-        model.summary()
+        model.add(tf.keras.layers.Dense(1,input_dim=in_dim,activation='relu'))
+    model.compile(loss='mse',optimizer=opt)
+
     return model
 
 
@@ -74,7 +64,6 @@ def load_indices(data_path,util_file):
                         5,ind,,,
                          ...
                         p,target,,,
-
     """
 
     unch_indices = []
@@ -109,7 +98,7 @@ def load_indices(data_path,util_file):
 
 def load_data(data_path,data_file,file_type="csv",unchange_indices=[],indirect_indices=[],
                 direct_indices=[],id_ind=0,target_ind=-1,seed=1234,val_prop=0.10,test_prop=0.10,
-                imbal_classes=False,opt_params={},save_file=""):
+                opt_params={},save_file=""):
 
     """
         data_path: Path to the data file. The output data will be written to this 
@@ -141,13 +130,6 @@ def load_data(data_path,data_file,file_type="csv",unchange_indices=[],indirect_i
         val_prop: Proportion of data to be used for the validation set.
 
         test_prop: Proportion of data to be used for the test set.
-
-        imbal_classes: Boolean. Whether or not there is class imbalance. If
-                       set to True, then we will stratify the positive class
-                       (assumed to be the imbalanced class). To ensure that
-                       positive samples are present in the train, validation,
-                       and test sets.
-
     """
 
     if file_type == "pkl":
@@ -174,6 +156,7 @@ def load_data(data_path,data_file,file_type="csv",unchange_indices=[],indirect_i
     dset_ids = dset_df[id_col_name].values
     dset_targets = dset_df[target_col_name].values
     X_data = dset_df.drop([id_col_name, target_col_name],axis=1)
+    
 
     unchange_indices = [X_data.columns.get_loc(c) for c in unchange_col_names]
     indirect_indices = [X_data.columns.get_loc(c) for c in indirect_col_names]
@@ -182,55 +165,11 @@ def load_data(data_path,data_file,file_type="csv",unchange_indices=[],indirect_i
     X_data = X_data.values    
 
 
-    #Randomly define train, val, test indices according to test_prop, val_prop
-    np.random.seed(seed=seed)
-
-    if imbal_classes == False:    
-
-        nfull = dset_ids.shape[0]
-        test_n = round(nfull*test_prop)
-        val_n = round(nfull*val_prop)
-        all_indices = [i for i in range(nfull)]
-        val_test_indices = np.random.choice(nfull,size=test_n+val_n,replace=False)
-
-        print(all_indices)
-        print(val_test_indices)
-
-        val_indices = [val_test_indices[i] for i in range(val_n)]
-        test_indices = [val_test_indices[i] for i in range(val_n,val_n+test_n)]
-
-        train_indices = list(set(all_indices) - set(val_test_indices))
-
-
-    else:
-
-        pos_inds = np.where(dset_targets == 1)[0]
-        neg_inds = np.where(dset_targets == 0)[0]   
-  
-        npos = pos_inds.shape[0]
-        nneg = neg_inds.shape[0]
-
-        test_n_pos = round(npos*test_prop)
-        test_n_neg = round(nneg*test_prop)
-
-        val_n_pos = round(npos*val_prop)
-        val_n_neg = round(nneg*val_prop)
-
-        val_test_pos_indices = np.random.choice(pos_inds,size=test_n_pos+val_n_pos,replace=False)
-        val_test_neg_indices = np.random.choice(neg_inds,size=test_n_neg+val_n_neg,replace=False)
-
-        val_pos_indices = [val_test_pos_indices[i] for i in range(val_n_pos)]
-        test_pos_indices = [val_test_pos_indices[i] for i in range(val_n_pos,val_n_pos+test_n_pos)]
-
-        val_neg_indices = [val_test_neg_indices[i] for i in range(val_n_neg)]
-        test_neg_indices = [val_test_neg_indices[i] for i in range(val_n_neg,val_n_neg+test_n_neg)]
-
-        train_pos_indices = list(set(pos_inds) - set(val_test_pos_indices))
-        train_neg_indices = list(set(neg_inds) - set(val_test_neg_indices))
-
-        val_indices = val_pos_indices + val_neg_indices
-        test_indices = test_pos_indices + test_neg_indices
-        train_indices = train_pos_indices + train_neg_indices
+    #Define train, val, test indices according to test_prop, val_prop
+    nfull = dset_ids.shape[0]
+    train_indices = [i for i in range(int(nfull * (1 - test_prop - val_prop)))]
+    val_indices = [i + int(nfull * (1 - test_prop - val_prop)) for i in range(int(nfull * val_prop))]
+    test_indices = [i + int(nfull * (1 - test_prop)) for i in range(int(nfull * test_prop))]
       
 
     #Partition data into train,val,test according to the above defined indices
