@@ -27,19 +27,30 @@ def make_model(data_dict,indirect_model):
         else:
             model.add(tf.keras.layers.Dense(out_dim,input_dim=in_dim,activation='relu'))
         
-        model.compile(loss="mse",optimizer=opt, metrics=["mse","mae"])
+        model.compile(
+            loss="mse",
+            optimizer=opt,
+            metrics=["mse","mae"]
+        )
 
         return model
 
     #For training regular models
-    in_dim = train_dat['X'].shape[1]
-    model = tf.keras.models.Sequential()
-    if FLAGS.hidden_units > 0:
-        model.add(tf.keras.layers.Dense(FLAGS.hidden_units,input_dim=in_dim,activation='relu'))
-        model.add(tf.keras.layers.Dense(1,input_dim=FLAGS.hidden_units,activation='relu'))
-    else:
-        model.add(tf.keras.layers.Dense(1,input_dim=in_dim,activation='relu'))
-    model.compile(loss='mse',optimizer=opt)
+    out_dim = len(data_dict['xI_ind'])+len(data_dict['xD_ind'])
+    model = tf.keras.models.Sequential([
+        tf.keras.layers.LSTM(32, return_sequences=True),
+        tf.keras.layers.Dense(units=out_dim)
+    ])
+
+    #model = tf.keras.models.Sequential([
+    #    tf.keras.layers.Dense(units=out_dim)
+    #])
+    
+    model.compile(
+        loss='mse',
+        optimizer=opt,
+        metrics=['mse','mae']
+    )
 
     return model
 
@@ -231,3 +242,73 @@ def load_data(data_path,data_file,file_type="csv",unchange_indices=[],indirect_i
             pkl.dump(return_dict,sF)
 
     return return_dict
+
+class WindowGenerator():
+    def __init__(self, input_width, label_width, shift, data_dict):
+
+        self.train_dat = data_dict['train']['X']
+        self.val_dat = data_dict['val']['X']
+        self.test_dat = data_dict['test']['X']
+
+        self.label_column_indices = data_dict['xI_ind'] + data_dict['xD_ind']
+        self.column_indices = data_dict['xU_ind'] + data_dict['xI_ind'] + data_dict['xD_ind']
+
+        self.input_width = input_width
+        self.label_width = label_width
+        self.shift = shift
+
+        self.total_window_size = input_width + shift
+
+        self.input_slice = slice(0, input_width)
+        self.input_indices = np.arange(self.total_window_size)[self.input_slice]
+
+        self.label_start = self.total_window_size - self.label_width
+        self.label_slice = slice(self.label_start, None)
+        self.label_indices = np.arange(self.total_window_size)[self.label_slice]
+
+    def __repr__(self):
+        return '\n'.join([
+            f'Total window size: {self.total_window_size}',
+            f'Input indices: {self.input_indices}',
+            f'Label indices: {self.label_indices}',
+            f'Label column indices: {self.label_column_indices}'
+        ])
+    
+    def split_window(self, features):
+        inputs = features[:, self.input_slice, :]
+        labels = features[:, self.label_slice, :]
+        labels = tf.stack(
+            [labels[:, :, self.column_indices[i]] for i in self.label_column_indices],
+            axis=-1
+        )
+
+        inputs.set_shape([None, self.input_width, None])
+        labels.set_shape([None, self.label_width, None])
+
+        return inputs, labels
+    
+    def make_dataset(self, data):
+        ds = tf.keras.utils.timeseries_dataset_from_array(
+            data=data,
+            targets=None,
+            sequence_length=self.total_window_size,
+            sequence_stride=1,
+            shuffle=True,
+            batch_size=32
+        )
+
+        ds = ds.map(self.split_window)
+
+        return ds
+    
+    @property
+    def train(self):
+        return self.make_dataset(self.train_dat)
+
+    @property
+    def val(self):
+        return self.make_dataset(self.val_dat)
+    
+    @property
+    def test(self):
+        return self.make_dataset(self.test_dat)

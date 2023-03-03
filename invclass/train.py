@@ -1,26 +1,21 @@
 from __future__ import division
 from __future__ import print_function
 
-__author__ = "Michael T. Lash, PhD"
+__author__ = "Trenton Gerew and Michael T. Lash, PhD"
 __copyright__ = "Copyright 2019, Michael T. Lash"
 __credits__ = [None]
 __license__ = "MIT"
-__version__ = "1.0.1"
-__maintainer__ = "Michael T. Lash"
-__email__ = "michael.lash@ku.edu"
+__version__ = "1.2.0"
+__maintainer__ = "Trenton Gerew"
+__email__ = "tgerew@anl.gov"
 __status__ = "Prototype" #"Development", "Production"
-
-import datetime
-import time
 
 import tensorflow as tf
 import numpy as np
 import os
-import pickle as pkl
 from absl import flags,app #Consistent with TF 2.0 API
-from tensorflow.keras import backend as K
 
-from invclass.utils import load_data, load_indices, make_model
+from invclass.utils import load_data, load_indices, make_model, WindowGenerator
 
 
 # Settings
@@ -67,11 +62,22 @@ def log_dir():
 
 
 def train(data_dict):
+
+    wide_window = WindowGenerator(
+        input_width=6,
+        label_width=6,
+        shift=1,
+        data_dict=data_dict
+    )
     
+    print(wide_window)
+
     train_dat = data_dict['train']
     val_dat = data_dict['val']
     model = make_model(data_dict,FLAGS.indirect_model)
     csv_logger = tf.keras.callbacks.CSVLogger(log_dir()+'training.log')
+    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=2, mode='min')
+    
     if FLAGS.indirect_model:
         tr_X = train_dat['X']
         val_X = val_dat['X']
@@ -84,17 +90,15 @@ def train(data_dict):
 
         history = model.fit(X_train, Y_train, epochs=FLAGS.epochs, batch_size=64,
                        validation_data=(X_val,Y_val),
-                       callbacks = [csv_logger])
+                       callbacks = [csv_logger, early_stopping])
         
         model.save(log_dir()+"model.h5")   
 
         return
     
-    y_train = tf.keras.utils.to_categorical(train_dat['target'])
-    y_val = tf.keras.utils.to_categorical(val_dat['target'])
-    history = model.fit(train_dat['X'], y_train, epochs=FLAGS.epochs, batch_size=64,
-                       validation_data=(val_dat['X'],y_val),
-                       callbacks = [csv_logger])
+    history = model.fit(wide_window.train, epochs=FLAGS.epochs,
+                       validation_data=wide_window.val,
+                       callbacks = [csv_logger, early_stopping])
     
 
     model.save(log_dir()+"model.h5")
