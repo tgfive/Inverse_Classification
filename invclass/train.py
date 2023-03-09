@@ -38,6 +38,9 @@ flags.DEFINE_boolean('indirect_model', False, 'Whether or not we are training a 
 flags.DEFINE_float('val_prop',0.10,'Proportion of dataset to use for validation. Default: 0.10')
 flags.DEFINE_float('test_prop',0.10,'Proportion of dataset to use for testing. Default: 0.10')
 flags.DEFINE_float('weight_decay',0.,'Weight decay on l2 regularization of model weights.')
+flags.DEFINE_integer('input_width', 6, 'Number of time steps of the input window. Default: 6')
+flags.DEFINE_integer('label_width', 6, 'Number of time steps of the label window. Default: 6')
+flags.DEFINE_integer('shift', 1, 'Time offset between input window and label window. Default: 1')
 
 
 
@@ -60,17 +63,17 @@ def log_dir():
         os.makedirs(log_dir)
     return log_dir
 
-
 def train(data_dict):
 
-    wide_window = WindowGenerator(
-        input_width=6,
-        label_width=6,
-        shift=1,
-        data_dict=data_dict
+    #Make a window
+    window = WindowGenerator(
+        input_width = FLAGS.input_width,
+        label_width = FLAGS.label_width,
+        shift = FLAGS.shift,
+        data_dict = data_dict
     )
     
-    print(wide_window)
+    print(window)
 
     train_dat = data_dict['train']
     val_dat = data_dict['val']
@@ -96,8 +99,8 @@ def train(data_dict):
 
         return
     
-    history = model.fit(wide_window.train, epochs=FLAGS.epochs,
-                       validation_data=wide_window.val,
+    history = model.fit(window.train, epochs=FLAGS.epochs,
+                       validation_data=window.val,
                        callbacks = [csv_logger, early_stopping])
     
 

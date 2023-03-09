@@ -50,7 +50,7 @@ tf.compat.v1.enable_eager_execution()
 
 np.set_printoptions(threshold=sys.maxsize)
 
-def inv_class(reg_model, ind_model, budget_inputs, labels, param_dict):
+def inv_class(reg_model, ind_model, inputs, labels, param_dict):
 
     """
 	model: Model for evaluating f([x_U,x_I,x_D])
@@ -61,7 +61,7 @@ def inv_class(reg_model, ind_model, budget_inputs, labels, param_dict):
 
     """
 
-    inv_budget_inputs = budget_inputs
+    inv_inputs = inputs.numpy()
     inv_labels = labels.numpy()
 
     budgets = param_dict['budgets']
@@ -71,50 +71,47 @@ def inv_class(reg_model, ind_model, budget_inputs, labels, param_dict):
     xD_i = index_dict['xD_ind']
     xD_ii = index_dict['xD_ind_ind']
 
+    xU_xD = np.hstack([inv_inputs[:,xU_i], inv_inputs[:,xD_i]])
+    #Initial prediction of indirect
+    xI_est = ind_model.predict(xU_xD)
+    #Initial prediction using indirect    
+    x_init = np.array([np.hstack([inv_inputs[:,xU_i], xI_est, inv_inputs[:,xD_i]])])    
+    obj_val_init = obj_fun(reg_model, x_init, inv_labels)
+
+    #NP matrix to store optimized xD values
+    xD_opt_mat = np.zeros((len(budgets)+1, inv_inputs.shape[0], len(xD_i)), dtype=np.float32)
+    xI_opt_mat = np.zeros((len(budgets)+1, inv_inputs.shape[0], len(xI_i)), dtype=np.float32)
+    opt_obj_vect = np.zeros((len(budgets)+1), dtype=np.float32)
+    
+    xD_opt_mat[0] = inv_inputs[:,xD_i]
+    xI_opt_mat[0] = xI_est
+    opt_obj_vect[0] = obj_val_init
+  
+
+    #Compute initial gradients for setting the bounds of ambig. d
+    reg_grad_full = inv_gradient(reg_model, x_init, inv_labels)[0]
+    #Compute the gradient of the ind_model
+    ind_grad_full = inv_gradient_ind(ind_model, xU_xD, num_loss=len(xI_i))
+    #Designate partial gradients
+    xD_grad = reg_grad_full[:,xD_i]
+    xI_grad = reg_grad_full[:,xI_i]
+    xD_ind_grad = ind_grad_full[:,xD_ii]
+    #Convert to np.float16 because np.float32 breaks np.matmul
+    xD_grad = xD_grad.astype(np.float16)
+    xI_grad = xI_grad.astype(np.float16)
+    xD_ind_grad = xD_ind_grad.astype(np.float16)
+
+    #df/dxD = df/dxD + df/dxI * dg/dxD
+    opt_grad = xD_grad + np.matmul(xI_grad,xD_ind_grad)
+
+    #Set bounds and d, c
+    d, c, l, u = set_bounds(inv_inputs, -1*opt_grad, param_dict)
+
+
     #Iterate over the budget values
     bud_iter = 0
-    for bud_num, b in enumerate(budgets):
-        inv_inputs = inv_budget_inputs[bud_num]
-
-        xU_xD = np.hstack([inv_inputs[:,xU_i], inv_inputs[:,xD_i]])
-        #Initial prediction of indirect
-        xI_est = ind_model.predict(xU_xD)
-        #Initial prediction using indirect    
-        x_init = np.array([np.hstack([inv_inputs[:,xU_i], xI_est, inv_inputs[:,xD_i]])])    
-        obj_val_init = obj_fun(reg_model, x_init, inv_labels)
-
-        #NP matrix to store optimized xD values
-        if bud_num == 0:
-            xD_opt_mat = np.zeros((len(budgets), inv_inputs.shape[0], len(xD_i)), dtype=np.float32)
-            xI_opt_mat = np.zeros((len(budgets), inv_inputs.shape[0], len(xI_i)), dtype=np.float32)
-            opt_obj_vect = np.zeros((len(budgets)), dtype=np.float32)
-        
-            xD_opt_mat[0] = inv_inputs[:,xD_i]
-            xI_opt_mat[0] = xI_est
-            opt_obj_vect[0] = obj_val_init
-
-            continue
-        
+    for b in budgets: 
         bud_iter+=1
-        
-        #Compute initial gradients for setting the bounds of ambig. d
-        reg_grad_full = inv_gradient(reg_model, x_init, inv_labels)[0]
-        #Compute the gradient of the ind_model
-        ind_grad_full = inv_gradient_ind(ind_model, xU_xD, num_loss=len(xI_i))
-        #Designate partial gradients
-        xD_grad = reg_grad_full[:,xD_i]
-        xI_grad = reg_grad_full[:,xI_i]
-        xD_ind_grad = ind_grad_full[:,xD_ii]
-        #Convert to np.float16 because np.float32 breaks np.matmul
-        xD_grad = xD_grad.astype(np.float16)
-        xI_grad = xI_grad.astype(np.float16)
-        xD_ind_grad = xD_ind_grad.astype(np.float16)
-
-        #df/dxD = df/dxD + df/dxI * dg/dxD
-        opt_grad = xD_grad + np.matmul(xI_grad,xD_ind_grad)
-        #Set bounds and d, c
-        d, c, l, u = set_bounds(inv_inputs, -1*opt_grad, param_dict)
-
         #Set iteration parameters
         diff = np.inf #Obj func difference between cur and prev iteration of grad descent
         tot_iters = 0 #Cur num iters of grad descent
@@ -246,8 +243,7 @@ def main(argv):
     ind_model = tf.keras.models.load_model(FLAGS.data_path+FLAGS.ind_model_file)       
     print("Done loading model. Executing inverse classification...")
     inv_data = data_dict['test']
-    xD_ind = data_dict['xD_ind']
-    xI_ind = data_dict['xI_ind']
+    X_inv = inv_data['X']
     X_ids = inv_data['ids']
     param_dict = set_parameters(data_dict)
 
@@ -273,48 +269,20 @@ def main(argv):
     
     result_dict = {"budgets":param_dict['budgets'],'ids':[]}
     improv_mat = np.zeros((len(inv_inds),len(param_dict['budgets'])+1))
-
-    budgets = param_dict['budgets']
-    budgets.insert(0,0)
-    budget_inputs = []
-    for b in budgets:
-        budget_inputs.append(copy.deepcopy(inputs))
-    budget_inputs = np.array(budget_inputs)    
-
     for idv in inv_inds:
-        print('\n Window ', idv, '\n')
-        inv_dat = inv_class(reg_model, ind_model, budget_inputs[:,idv], labels[idv], param_dict)
+        inv_dat = inv_class(reg_model, ind_model, inputs[idv], labels[idv], param_dict)
         result_dict['ids'].append(X_ids[idv]) 
         result_dict[X_ids[idv]] = inv_dat
         improv_mat[idv] = inv_dat['obj']
-
-        if idv+1 < len(inv_inds):
-            budget_inputs[:,idv+1,:-FLAGS.shift,:][:,:,xI_ind] = inv_dat['xI'][:,FLAGS.shift:,:]
-            budget_inputs[:,idv+1,:-FLAGS.shift,:][:,:,xD_ind] = inv_dat['xD'][:,FLAGS.shift:,:]
     
-
-    return_xI = np.zeros([len(budgets), data_dict['test']['X'].shape[0], len(xI_ind)])
-    return_xD = np.zeros([len(budgets), data_dict['test']['X'].shape[0], len(xD_ind)])
-
-    improv_inds_list = list(range(len(result_dict['ids'])))
-    improv_inds_list.reverse()
-    for idx in improv_inds_list:
-        improv_ind = result_dict['ids'][idx]
-        return_xI[:, idx:idx+FLAGS.input_width] = result_dict[improv_ind]['xI']
-        return_xD[:, idx:idx+FLAGS.input_width] = result_dict[improv_ind]['xD']
-
-    return_dict = {'budgets':result_dict['budgets'],
-                   'improv_mat':improv_mat,
-                   'xI':return_xI,
-                   'xD':return_xD}
-
     avg_opt = np.mean(improv_mat,axis=0)
+    budgets = param_dict['budgets']
+    budgets.insert(0,0)
     res_mat = np.vstack([budgets,avg_opt])
     np.set_printoptions(precision=3)
     print("Average probability by budget:\n {}".format(res_mat))
-    save_result(return_dict)
+    save_result(result_dict)
 
 
 if __name__ == '__main__':
     app.run(main)
-

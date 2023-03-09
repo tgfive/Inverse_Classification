@@ -42,10 +42,6 @@ def make_model(data_dict,indirect_model):
         tf.keras.layers.Dense(units=out_dim)
     ])
 
-    #model = tf.keras.models.Sequential([
-    #    tf.keras.layers.Dense(units=out_dim)
-    #])
-    
     model.compile(
         loss='mse',
         optimizer=opt,
@@ -53,7 +49,6 @@ def make_model(data_dict,indirect_model):
     )
 
     return model
-
 
 def load_indices(data_path,util_file):
     """
@@ -255,7 +250,7 @@ class WindowGenerator():
 
         self.input_width = input_width
         self.label_width = label_width
-        self.shift = shift
+        self.shift = shift 
 
         self.total_window_size = input_width + shift
 
@@ -293,8 +288,8 @@ class WindowGenerator():
             targets=None,
             sequence_length=self.total_window_size,
             sequence_stride=1,
-            shuffle=True,
-            batch_size=32
+            shuffle=False,
+            batch_size=data.shape[0]
         )
 
         ds = ds.map(self.split_window)

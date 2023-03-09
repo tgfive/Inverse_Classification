@@ -1,24 +1,32 @@
 import pandas as pd
 import numpy as np
-import random
-import os
 
-print(os.getcwd())
+PATH = 'brazil_data/'
+OUT = 'A047_weather'
+FILE = 'central_west.csv'
+DESC = 'columns_description.csv'
 
-OUT = 'brazil_data/brazil_weather'
-FILE = 'brazil_data/central_west.csv'
-DESC = 'brazil_data/columns_description.csv'
+STATION = 'A047'
 
 SAMPLE = True
 SAMPLE_SIZE = 650
 
-df = pd.read_csv(FILE)
-col_desc = pd.read_csv(DESC)
+print('Loading data...')
+
+df = pd.read_csv(PATH+FILE)
+col_desc = pd.read_csv(PATH+DESC)
+
+print('Mapping labels...')
 
 df.drop(columns=['index'], inplace=True)
 
 mapping = pd.Series(col_desc['abbreviation'].values, index=df.columns).to_dict()
 df.rename(columns=mapping, inplace=True)
+
+df = df.loc[df['inme'] == STATION]
+df.drop(columns=['reg','prov','wsnm','inme'], inplace=True)
+
+print('Creating time values...')
 
 df['DATE'] = pd.to_datetime(df['date'], format='%Y-%m-%d')
 df['TIME'] = pd.to_datetime(df['hr'], format='%H:%M')
@@ -39,22 +47,6 @@ df.drop(columns=['DATE','TIME','DAY','MONTH','YEAR','HOUR','MINUTE','SECOND'], i
 df.sort_values(by='mdct', inplace=True)
 df.reset_index(drop=True, inplace=True)
 
-df.drop(columns=['reg','prov','wsnm','inme'], inplace=True)
-
-df.replace([-9999,-99990], np.nan, inplace=True)
-for col in df.columns:
-    df[col].fillna(value=df[col].mean(), inplace=True)
-
-df['wd_rad'] = df['wdct'] * np.pi / 180
-
-df['Wx'] = df['wdsp'] * np.cos(df['wd_rad'])
-df['Wy'] = df['wdsp'] * np.sin(df['wd_rad'])
-
-df['Gx'] = df['gust'] * np.cos(df['wd_rad'])
-df['Gy'] = df['gust'] * np.sin(df['wd_rad'])
-
-df.drop(columns=['wd_rad','wdsp', 'wdct','gust'], inplace=True)
-
 date_time = df.pop('mdct')
 
 timestamp_s = date_time.map(pd.Timestamp.timestamp)
@@ -67,19 +59,39 @@ df['Day cos'] = np.cos(timestamp_s * (2 * np.pi / day))
 df['Year sin'] = np.sin(timestamp_s * (2 * np.pi / year))
 df['Year cos'] = np.cos(timestamp_s * (2 * np.pi / year))
 
+print('Approximating missing points...')
+
+df.replace([-9999,-99990], np.nan, inplace=True)
+for col in df.columns:
+    df[col].fillna(value=df[col].mean(), inplace=True)
+
+print('Finalizing dataset...')
+
+df['wd_rad'] = df['wdct'] * np.pi / 180
+
+df['Wx'] = df['wdsp'] * np.cos(df['wd_rad'])
+df['Wy'] = df['wdsp'] * np.sin(df['wd_rad'])
+
+df['Gx'] = df['gust'] * np.cos(df['wd_rad'])
+df['Gy'] = df['gust'] * np.sin(df['wd_rad'])
+
+df.drop(columns=['wd_rad','wdsp', 'wdct','gust'], inplace=True)
+
 df['target'] = df.sum(axis=1)
 
-#df = (df - df.min()) / (df.max() - df.min())
+noise = np.random.normal(0,1,(df.shape[0],3))
+df[['lat', 'lon', 'elvt']] = df[['lat', 'lon', 'elvt']] + noise
 
 df = df[['lat', 'lon', 'elvt', 'Day sin', 'Day cos', 'Year sin', 'Year cos',
     'smax', 'smin', 'tmax', 'tmin', 'dmax', 'dmin', 'hmax', 'hmin', 'Gx', 'Gy',
     'prcp', 'stp', 'gbrd', 'temp', 'dewp', 'hmdy', 'Wx', 'Wy',
     'target']]
 
+print('Writing to file...')
+
 if SAMPLE:
-    inds = [random.randint(0,len(df.index)) for iter in range(SAMPLE_SIZE)]
+    inds = list(np.arange(0,SAMPLE_SIZE))
     df = df.iloc[inds]
 
 df.index = np.arange(1, len(df.index)+1)
-
-df.to_csv(OUT+'.csv', index=True)
+df.to_csv(PATH+OUT+'.csv', index=True)
