@@ -294,7 +294,6 @@ def main(argv):
     budget_inputs = np.array(budget_inputs)    
 
     for idv in inv_inds:
-        print('\n Window ', idv, '\n')
         inv_dat = inv_class(reg_model, ind_model, budget_inputs[:,idv], labels[idv], param_dict)
         result_dict['ids'].append(X_ids[idv]) 
         result_dict[X_ids[idv]] = inv_dat
