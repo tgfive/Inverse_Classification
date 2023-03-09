@@ -14,6 +14,7 @@ from absl import flags,app #Consistent with TF 2.0 API
 import sys
 import tensorflow as tf
 import copy
+import time
 import numpy as np
 from invclass.proj_simplex import proj_simplex
 from invclass.utils import load_data, WindowGenerator
@@ -60,6 +61,7 @@ def inv_class(reg_model, ind_model, budget_inputs, labels, param_dict):
                     .pkl data_file (this is created from train.py during data processing).
 
     """
+    ts = time.process_time()
 
     inv_budget_inputs = budget_inputs
     inv_labels = labels.numpy()
@@ -88,10 +90,14 @@ def inv_class(reg_model, ind_model, budget_inputs, labels, param_dict):
             xD_opt_mat = np.zeros((len(budgets), inv_inputs.shape[0], len(xD_i)), dtype=np.float32)
             xI_opt_mat = np.zeros((len(budgets), inv_inputs.shape[0], len(xI_i)), dtype=np.float32)
             opt_obj_vect = np.zeros((len(budgets)), dtype=np.float32)
-        
+            t_mat = np.zeros(len(budgets), dtype=np.float32)
+
             xD_opt_mat[0] = inv_inputs[:,xD_i]
             xI_opt_mat[0] = xI_est
             opt_obj_vect[0] = obj_val_init
+
+            te = time.process_time()
+            t_mat[0] = te
 
             continue
         
@@ -232,9 +238,14 @@ def inv_class(reg_model, ind_model, budget_inputs, labels, param_dict):
             opt_obj_vect[bud_iter] = obj_vect[-2]
         else:
             opt_obj_vect[bud_iter] = obj_vect[-1]
+        
+        te = time.process_time()
+        t_mat[bud_iter] = te
+
     return_dict={"obj":opt_obj_vect,
                  "xD":xD_opt_mat,
                  "xI":xI_opt_mat,
+                 "t_mat":t_mat
                 }
     return return_dict
 
@@ -273,6 +284,7 @@ def main(argv):
     
     result_dict = {"budgets":param_dict['budgets'],'ids':[]}
     improv_mat = np.zeros((len(inv_inds),len(param_dict['budgets'])+1))
+    time_mat = np.zeros(len(param_dict['budgets'])+1)
 
     budgets = param_dict['budgets']
     budgets.insert(0,0)
@@ -287,6 +299,7 @@ def main(argv):
         result_dict['ids'].append(X_ids[idv]) 
         result_dict[X_ids[idv]] = inv_dat
         improv_mat[idv] = inv_dat['obj']
+        time_mat += inv_dat['t_mat']
 
         if idv+1 < len(inv_inds):
             budget_inputs[:,idv+1,:-FLAGS.shift,:][:,:,xI_ind] = inv_dat['xI'][:,FLAGS.shift:,:]
@@ -304,14 +317,15 @@ def main(argv):
         return_xD[:, idx:idx+FLAGS.input_width] = result_dict[improv_ind]['xD']
 
     return_dict = {'budgets':result_dict['budgets'],
+                   'time_mat':time_mat,
                    'improv_mat':improv_mat,
                    'xI':return_xI,
                    'xD':return_xD}
 
     avg_opt = np.mean(improv_mat,axis=0)
-    res_mat = np.vstack([budgets,avg_opt])
+    res_mat = np.vstack([budgets,avg_opt,time_mat])
     np.set_printoptions(precision=3)
-    print("Average probability by budget:\n {}".format(res_mat))
+    print("Average probability by budget with CPU time:\n {}".format(res_mat))
     save_result(return_dict)
 
 
