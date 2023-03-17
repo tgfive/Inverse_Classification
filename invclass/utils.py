@@ -184,14 +184,16 @@ def load_data(data_path,data_file,file_type="csv",unchange_indices=[],indirect_i
     train_X = X_data[train_indices]    
     train_target = dset_targets[train_indices]
     train_ids = dset_ids[train_indices]
-
-    #Obtain normalization values
-    min_X = np.amin(train_X,axis=0)
-    max_X = np.amax(train_X,axis=0) 
-
-    #Normalize training data
-    norm_train_X =np.divide(train_X - min_X,max_X - min_X)
     
+    if test_prop != 1:
+        #Obtain normalization values
+        min_X = np.amin(train_X,axis=0)
+        max_X = np.amax(train_X,axis=0) 
+
+        #Normalize training data
+        norm_train_X = np.divide(train_X - min_X,max_X - min_X)
+    else:
+        norm_train_X = np.array([])
    
     train_dict = {"X":norm_train_X, "target":train_target, "ids":train_ids}
 
@@ -199,9 +201,12 @@ def load_data(data_path,data_file,file_type="csv",unchange_indices=[],indirect_i
     val_X= X_data[val_indices]
     val_target = dset_targets[val_indices]
     val_ids = dset_ids[val_indices]
-
-    #Normailze validation data
-    norm_val_X = np.divide(val_X - min_X,max_X - min_X)
+    
+    if test_prop != 1:
+        #Normailze validation data
+        norm_val_X = np.divide(val_X - min_X,max_X - min_X)
+    else:
+        norm_val_X = np.array([])
 
     val_dict = {"X":norm_val_X, "target":val_target, "ids":val_ids}
 
@@ -209,6 +214,10 @@ def load_data(data_path,data_file,file_type="csv",unchange_indices=[],indirect_i
     test_X = X_data[test_indices]
     test_target = dset_targets[test_indices]
     test_ids = dset_ids[test_indices]
+    
+    if test_prop == 1:
+        min_X = np.amin(test_X,axis=0)
+        max_X = np.amax(test_X,axis=0)
 
     #Normalize test data
     norm_test_X = np.divide(test_X - min_X,max_X - min_X)

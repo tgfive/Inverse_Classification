@@ -1,13 +1,24 @@
+import sys
 import pickle as pkl
 import numpy as np
 import matplotlib.pyplot as plt
 from absl import flags, app
 
-FLAGS = flags.FLAGS
+flags.DEFINE_string('data_path', '', 'Path to the data file. Required.')
+flags.DEFINE_string('data_file', '', 'Name of the data file. Required.')
+flags.DEFINE_string('result_file', '', 'Name of the result file. Required.')
+flags.DEFINE_string('image_path', '', 'Path to the image file. Required.')
 
-with open(r'brazil_data/brazil_result.pkl','rb') as file:
+FLAGS = flags.FLAGS
+FLAGS(sys.argv)
+
+print('Begin plotting...')
+
+print('Loading data...')
+
+with open(FLAGS.data_path + FLAGS.result_file,'rb') as file:
     result_dict = pkl.load(file)
-with open(r'brazil_data/processed_brazil.pkl','rb') as file:
+with open(FLAGS.data_path + FLAGS.data_file,'rb') as file:
     data_dict = pkl.load(file)
 
 xI_ind = data_dict['xI_ind']
@@ -20,63 +31,59 @@ budgets = result_dict['budgets']
 improv_mat = result_dict['improv_mat']
 time_mat = result_dict['time_mat']
 
-for i, b in enumerate(budgets):
-    xI_est = result_dict['xI'][i]
-    xI_diff = np.mean(np.absolute(xI_obs - xI_est), axis=1)
-    plt.plot(xI_diff, label=b)
 
-plt.legend(title='Budgets')
-plt.title('xI: MAE for Prediction vs Observed')
-plt.xlabel('Time Series')
-plt.ylabel('MAE')
-_ = plt.show()
+print('Plotting indirectly changeable features...')
 
-for i, b in enumerate(budgets):
-    xI_est = result_dict['xI'][i]
-    xI_diff = np.mean(np.square(xI_obs - xI_est), axis=1)
-    plt.plot(xI_diff, label=b)
+for count, x_ind in enumerate(xI_ind):
+    fig, ax = plt.subplots(layout='constrained', figsize=(8,5))
+    ax.set_title(f'Perturbations in feature {x_ind} (indirectly changeable)')
 
-plt.legend(title='Budgets')
-plt.title('xI: MSE for Prediction vs Observed')
-plt.xlabel('Time Series')
-plt.ylabel('MSE')
-_ = plt.show()
+    for b, bud in enumerate(budgets[1:]):
+        xI_est = result_dict['xI'][b,:,count]
+        xI_diff = xI_est - xI_obs[:,count]
+        ax.plot(xI_diff, label=bud)
 
-for i, b in enumerate(budgets):
-    xD_est = result_dict['xD'][i]
-    xD_diff = np.mean(np.absolute(xD_obs - xD_est), axis=1)
-    plt.plot(xD_diff, label=b)
+    ax.legend(title='Budgets', loc='center right', bbox_to_anchor=(1.15,0.5))
+    ax.set_xlabel('Time Series')
+    ax.set_ylabel('Perturbation')
+    fig.savefig(FLAGS.image_path + f'pert_feat_{x_ind}')
 
-plt.legend(title='Budgets')
-plt.title('xD: MAE for Prediction vs Observed')
-plt.xlabel('Time Series')
-plt.ylabel('MAE')
-_ = plt.show()
 
-for i, b in enumerate(budgets):
-    xD_est = result_dict['xD'][i]
-    xD_diff = np.mean(np.square(xD_obs - xD_est), axis=1)
-    plt.plot(xD_diff, label=b)
+print('Plotting directly changeable features...')
 
-plt.legend(title='Budgets')
-plt.title('xD: MSE for Prediction vs Observed')
-plt.xlabel('Time Series')
-plt.ylabel('MSE')
-_ = plt.show()
+for count, x_ind in enumerate(xD_ind):
+    fig, ax = plt.subplots(layout='constrained', figsize=(8,5))
+    ax.set_title(f'Perturbations in feature {x_ind} (directly changeable)')
 
-plt.plot(budgets, time_mat)
-plt.yscale('log')
+    for b, bud in enumerate(budgets[1:]):
+        xD_est = result_dict['xD'][b,:,count]
+        xD_diff = xD_est - xD_obs[:,count]
+        ax.plot(xD_diff, label=bud)
 
-plt.title('Compute Time')
-plt.xlabel('Budget')
-plt.ylabel('CPU Time (seconds)')
+    ax.legend(title='Budgets', loc='center right', bbox_to_anchor=(1.15,0.5))
+    ax.set_xlabel('Time Series')
+    ax.set_ylabel('Perturbation')
+    fig.savefig(FLAGS.image_path + f'pert_feat_{x_ind}')
 
-_ = plt.show()
 
-plt.plot(budgets, np.mean(improv_mat, axis=0))
+print('PLotting compute time...')
 
-plt.title('Average Loss')
-plt.xlabel('Budget')
-plt.ylabel('Loss')
+fig, ax = plt.subplots(layout='constrained', figsize=(8,5))
+ax.set_title('Compute Time')
+ax.plot(budgets, time_mat)
+ax.set_yscale('log')
+ax.set_xlabel('Budget')
+ax.set_ylabel('CPU Time (seconds)')
+fig.savefig(FLAGS.image_path + 'compute_time')
 
-_ = plt.show()
+
+print('Plotting average loss...')
+
+fig, ax = plt.subplots(layout='constrained', figsize=(8,5))
+ax.set_title('Average Loss')
+ax.plot(budgets, np.mean(improv_mat, axis=0))
+ax.set_xlabel('Budget')
+ax.set_ylabel('Loss')
+fig.savefig(FLAGS.image_path + 'avg_loss')
+
+print('Plotting complete.')

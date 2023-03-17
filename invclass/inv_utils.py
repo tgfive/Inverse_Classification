@@ -21,8 +21,7 @@ def obj_fun(model, inputs, labels):
     prediction = model(inputs)
     observed = tf.cast(labels, tf.float32)
 
-    loss = tf.norm(prediction - observed, ord='euclidean')
-
+    loss = tf.norm(prediction[0,-1,:] - observed[-1,:], ord='euclidean')
     return loss
 
 def inv_gradient(model, inputs, labels):

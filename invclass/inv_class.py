@@ -44,7 +44,7 @@ flags.DEFINE_float('grad_tol', .0001, 'Gradient descent stopping criteria (\epsi
 flags.DEFINE_float('lam', 10, 'Initial gradient multiplier. Default: 10')
 flags.DEFINE_integer('input_width', 6, 'Number of time steps of the input window. Default: 6')
 flags.DEFINE_integer('label_width', 6, 'Number of time steps of the label window. Default: 6')
-flags.DEFINE_integer('shift', 1, 'Time offset between input window and label window. Default: 1')
+flags.DEFINE_integer('shift', 6, 'Time offset between input window and label window. Default: 1')
 
 
 tf.compat.v1.enable_eager_execution()
