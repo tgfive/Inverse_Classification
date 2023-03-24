@@ -149,6 +149,7 @@ def load_data(data_path,data_file,file_type="csv",unchange_indices=[],indirect_i
         raise Exception("Unsupoorted file type {}. Support file types are 'csv' and 'pkl'.".format(file_type))
 
     dset_df = pd.read_csv(data_path+data_file,sep=sep)
+    nan_df = pd.read_csv(data_path+data_file[:-4]+'_nan.csv',sep=sep)
 
     header = dset_df.columns
 
@@ -162,13 +163,14 @@ def load_data(data_path,data_file,file_type="csv",unchange_indices=[],indirect_i
     dset_ids = dset_df[id_col_name].values
     dset_targets = dset_df[target_col_name].values
     X_data = dset_df.drop([id_col_name, target_col_name],axis=1)
-    
+    nan_data = nan_df.drop([id_col_name, target_col_name],axis=1)
 
     unchange_indices = [X_data.columns.get_loc(c) for c in unchange_col_names]
     indirect_indices = [X_data.columns.get_loc(c) for c in indirect_col_names]
     direct_indices = [X_data.columns.get_loc(c) for c in direct_col_names]
 
-    X_data = X_data.values    
+    X_data = X_data.values
+    nan_data = nan_data.values
 
 
     #Define train, val, test indices according to test_prop, val_prop
@@ -181,10 +183,11 @@ def load_data(data_path,data_file,file_type="csv",unchange_indices=[],indirect_i
     #Partition data into train,val,test according to the above defined indices
     
     #Train
-    train_X = X_data[train_indices]    
+    train_X = X_data[train_indices]
+    train_nan = nan_data[train_indices]
     train_target = dset_targets[train_indices]
     train_ids = dset_ids[train_indices]
-    
+
     if test_prop != 1:
         #Obtain normalization values
         min_X = np.amin(train_X,axis=0)
@@ -195,10 +198,11 @@ def load_data(data_path,data_file,file_type="csv",unchange_indices=[],indirect_i
     else:
         norm_train_X = np.array([])
    
-    train_dict = {"X":norm_train_X, "target":train_target, "ids":train_ids}
+    train_dict = {"X":norm_train_X, "nan":train_nan, "target":train_target, "ids":train_ids}
 
     #Val
     val_X= X_data[val_indices]
+    val_nan = nan_data[val_indices]
     val_target = dset_targets[val_indices]
     val_ids = dset_ids[val_indices]
     
@@ -208,10 +212,11 @@ def load_data(data_path,data_file,file_type="csv",unchange_indices=[],indirect_i
     else:
         norm_val_X = np.array([])
 
-    val_dict = {"X":norm_val_X, "target":val_target, "ids":val_ids}
+    val_dict = {"X":norm_val_X, "nan":val_nan, "target":val_target, "ids":val_ids}
 
     #Test
     test_X = X_data[test_indices]
+    test_nan = nan_data[test_indices]
     test_target = dset_targets[test_indices]
     test_ids = dset_ids[test_indices]
     
@@ -222,8 +227,7 @@ def load_data(data_path,data_file,file_type="csv",unchange_indices=[],indirect_i
     #Normalize test data
     norm_test_X = np.divide(test_X - min_X,max_X - min_X)
 
-
-    test_dict = {"X":norm_test_X, "target":test_target, "ids":test_ids}
+    test_dict = {"X":norm_test_X, "nan":test_nan, "target":test_target, "ids":test_ids}
 
 
     return_dict = {'train':train_dict,
