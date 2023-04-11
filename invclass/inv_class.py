@@ -65,6 +65,7 @@ def inv_class(reg_model, ind_model, budget_inputs, labels, param_dict):
 
     inv_budget_inputs = budget_inputs
     inv_labels = labels.numpy()
+    inv_labels = np.array([inv_labels])
 
     budgets = param_dict['budgets']
     index_dict = param_dict['inds']
@@ -281,6 +282,7 @@ def main(argv):
     nz_inds = list(set(nz_grads[0]))
     print("Total test instances w/ non-zero grads: {}".format(len(nz_inds)),
            "out of {} total instances".format(grads.shape[0]))
+    input('Press enter to continue...')
     
     result_dict = {"budgets":param_dict['budgets'],'ids':[]}
     improv_mat = np.zeros((len(inv_inds),len(param_dict['budgets'])+1))

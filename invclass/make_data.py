@@ -3,11 +3,11 @@ import numpy as np
 
 #PATH = ''
 PATH = '../brazil_data/'
-OUT = 'A757_weather'
+OUT = 'A036_weather'
 FILE = 'central_west.csv'
 DESC = 'columns_description.csv'
 
-STATION = 'A757'
+STATION = 'A036'
 
 SAMPLE = True
 SAMPLE_SIZE = 1000
@@ -105,6 +105,7 @@ print('Writing to file...')
 if SAMPLE:
     inds = list(np.arange(0,SAMPLE_SIZE))
     df = df.iloc[inds]
+    nandf = nandf.iloc[inds]
 
 df.index = np.arange(1, len(df.index)+1)
 df.to_csv(PATH+OUT+'.csv', index=True)

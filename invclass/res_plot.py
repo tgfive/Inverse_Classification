@@ -1,5 +1,6 @@
 import sys
 import csv
+import seaborn as sns
 import pickle as pkl
 import numpy as np
 import matplotlib.pyplot as plt
@@ -59,11 +60,19 @@ for count, x_ind in enumerate(xI_ind):
         xI_diff = xI_est - xI_obs[:,count]
         ax.plot(xI_diff, label=bud)
 
+        plt.figure('histogram')
+        hist = sns.histplot(data=xI_diff)
+        hist.set(xlabel='Perturbation',
+                 title=f'Perturbations in feature {feat_name} (indirectly changeable) with budget {bud}')
+        plt.savefig(FLAGS.image_path + FLAGS.util_file[:-4] + f'_hist_feat-{x_ind}_bud-{b}')
+        plt.close('histogram')
+        
     ax.legend(title='Budgets', loc='center right', bbox_to_anchor=(1.15,0.5))
     ax.set_xlabel('Time Series')
     ax.set_ylabel('Perturbation')
-    fig.savefig(FLAGS.image_path + f'pert_feat_{x_ind}')
+    fig.savefig(FLAGS.image_path + FLAGS.util_file[:-4] + f'_pert_feat_{x_ind}')
 
+    plt.close('all')
 
 print('Plotting directly changeable features...')
 
@@ -81,11 +90,19 @@ for count, x_ind in enumerate(xD_ind):
         xD_diff = xD_est - xD_obs[:,count]
         ax.plot(xD_diff, label=bud)
 
+        plt.figure('histogram')
+        hist = sns.histplot(data=xD_diff, bins=40)
+        hist.set(xlabel='Perturbation',
+                 title=f'Perturbations in feature {feat_name} (directly changeable) with budget {bud}')
+        plt.savefig(FLAGS.image_path + FLAGS.util_file[:-4] + f'_hist_feat-{x_ind}_bud-{b}')
+        plt.close('histogram')
+
     ax.legend(title='Budgets', loc='center right', bbox_to_anchor=(1.15,0.5))
     ax.set_xlabel('Time Series')
     ax.set_ylabel('Perturbation')
-    fig.savefig(FLAGS.image_path + f'pert_feat_{x_ind}')
+    fig.savefig(FLAGS.image_path + FLAGS.util_file[:-4] + f'_pert_feat_{x_ind}')
 
+    plt.close('all')
 
 print('PLotting compute time...')
 
@@ -95,7 +112,7 @@ ax.plot(budgets, time_mat)
 ax.set_yscale('log')
 ax.set_xlabel('Budget')
 ax.set_ylabel('CPU Time (seconds)')
-fig.savefig(FLAGS.image_path + 'compute_time')
+fig.savefig(FLAGS.image_path + FLAGS.util_file[:-4] + 'compute_time')
 
 
 print('Plotting average loss...')
@@ -105,6 +122,6 @@ ax.set_title('Average Loss')
 ax.plot(budgets, np.mean(improv_mat, axis=0))
 ax.set_xlabel('Budget')
 ax.set_ylabel('Loss')
-fig.savefig(FLAGS.image_path + 'avg_loss')
+fig.savefig(FLAGS.image_path + FLAGS.util_file[:-4] + '_avg_loss')
 
 print('Plotting complete.')
