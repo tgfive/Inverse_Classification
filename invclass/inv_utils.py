@@ -17,7 +17,7 @@ from absl import flags #Consistent with TF 2.0 API
 
 FLAGS = flags.FLAGS
 
-def obj_fun(model, inputs, labels):
+def obj_fun(model, inputs, labels, obs_indices):
     prediction = model(inputs)
     observed = tf.cast(labels, tf.float32)
 
