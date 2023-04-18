@@ -72,7 +72,7 @@ def load_indices(data_path,util_file):
                         p,target,,,,
     """
 	
-	obs_indices = []
+    obs_indices = []
     unch_indices = []
     ind_indices = []
     dir_indices = []
@@ -84,8 +84,8 @@ def load_indices(data_path,util_file):
     with open(data_path+util_file,'rU') as rF:
         fReader = csv.reader(rF,delimiter=',')
         for i, row in enumerate(fReader):
-			if row[5] == 'obs':
-				obs_indices.append(int(row[0]))
+            if row[5] == 'obs':
+                obs_indices.append(int(row[0]))
 				
             if row[1] == 'id':
                 id_ind = int(row[0])
@@ -172,7 +172,7 @@ def load_data(data_path,data_file,file_type="csv",obs_indices=[],unchange_indice
     X_data = dset_df.drop([id_col_name, target_col_name],axis=1)
     nan_data = nan_df.drop([id_col_name, target_col_name],axis=1)
 
-	obs_indices = [X_data.columns.get_loc(c) for c in obs_col_names]
+    obs_indices = [X_data.columns.get_loc(c) for c in obs_col_names]
     unchange_indices = [X_data.columns.get_loc(c) for c in unchange_col_names]
     indirect_indices = [X_data.columns.get_loc(c) for c in indirect_col_names]
     direct_indices = [X_data.columns.get_loc(c) for c in direct_col_names]
