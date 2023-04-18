@@ -69,6 +69,7 @@ def inv_class(reg_model, ind_model, budget_inputs, labels, param_dict):
 
     budgets = param_dict['budgets']
     index_dict = param_dict['inds']
+    xO_i = index_dict['xO_ind']
     xU_i = index_dict['xU_ind']
     xI_i = index_dict['xI_ind']
     xD_i = index_dict['xD_ind']
@@ -84,7 +85,7 @@ def inv_class(reg_model, ind_model, budget_inputs, labels, param_dict):
         xI_est = ind_model.predict(xU_xD)
         #Initial prediction using indirect    
         x_init = np.array([np.hstack([inv_inputs[:,xU_i], xI_est, inv_inputs[:,xD_i]])])    
-        obj_val_init = obj_fun(reg_model, x_init, inv_labels)
+        obj_val_init = obj_fun(reg_model, x_init, inv_labels, xO_i)
 
         #NP matrix to store optimized xD values
         if bud_num == 0:
@@ -181,7 +182,7 @@ def inv_class(reg_model, ind_model, budget_inputs, labels, param_dict):
             #Re-evaluate obj function using xI_est and xD_opt
             full_opt_x = np.array([np.hstack([inv_inputs[:,xU_i], xI_est, opt_xD])])
 
-            cObj = obj_fun(reg_model, full_opt_x, inv_labels).numpy()
+            cObj = obj_fun(reg_model, full_opt_x, inv_labels, xO_i).numpy()
             
             while (cObj > obj_vect[-1]) and gStep < 1000:
                 #In case we have haven't exceed the previous iteration
@@ -223,7 +224,7 @@ def inv_class(reg_model, ind_model, budget_inputs, labels, param_dict):
                 #Re-evaluate obj function using xI_est and xD_opt
                 full_opt_x = np.array([np.hstack([inv_inputs[:,xU_i], xI_est, opt_xD])])
 
-                cObj = obj_fun(reg_model, full_opt_x, inv_labels).numpy()
+                cObj = obj_fun(reg_model, full_opt_x, inv_labels, xO_i).numpy()
 
 
             obj_vect.append(cObj)
@@ -258,6 +259,7 @@ def main(argv):
     ind_model = tf.keras.models.load_model(FLAGS.data_path+FLAGS.ind_model_file)       
     print("Done loading model. Executing inverse classification...")
     inv_data = data_dict['test']
+    xO_ind = data_dict['xO_ind']
     xD_ind = data_dict['xD_ind']
     xI_ind = data_dict['xI_ind']
     X_ids = inv_data['ids']
