@@ -15,10 +15,10 @@ FLAGS(sys.argv)
 
 print('Creating test data...')
 
-unch_indices,indir_indices,dir_indices,cost_inc,cost_dec,direct_chg,id_ind,target_ind = load_indices(FLAGS.data_path,FLAGS.util_file)
+obs_indices,unch_indices,indir_indices,dir_indices,cost_inc,cost_dec,direct_chg,id_ind,target_ind = load_indices(FLAGS.data_path,FLAGS.util_file)
 opt_params = {'cost_inc':cost_inc,'cost_dec':cost_dec,'direct_chg':direct_chg}
 
-data_dict = load_data(FLAGS.data_path,FLAGS.data_file,FLAGS.file_type,
+data_dict = load_data(FLAGS.data_path,FLAGS.data_file,FLAGS.file_type,obs_indices,
     unch_indices,indir_indices,dir_indices,id_ind=id_ind,
     target_ind=target_ind,val_prop=FLAGS.val_prop,
     test_prop=FLAGS.test_prop,opt_params=opt_params,
