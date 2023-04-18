@@ -63,7 +63,7 @@ def set_parameters(data_dict):
     index_dict = {'xO_ind': data_dict['xO_ind'],
 				 'xU_ind': data_dict['xU_ind'],
 				 'xI_ind': data_dict['xI_ind'], 
-                 'xD_ind':data_dict['xD_ind'], 
+                 'xD_ind': data_dict['xD_ind'], 
                  'xD_ind_ind': [i for i in range(len(data_dict['xU_ind']),
                                len(data_dict['xU_ind'])+len(data_dict['xD_ind']))]}
     param_dict['inds'] = index_dict
