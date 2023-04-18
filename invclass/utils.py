@@ -55,23 +55,24 @@ def load_indices(data_path,util_file):
         data_path: Path to data files.
 
         util_file: Name of the file containing the index designations, cost
-                   parameters, and direction of change parameters. Should be
-                    of the form:
+                   parameters, direction of change parameters and observation boolean. Should be
+                   of the form:
 
-                        index, designation, cost increase, cost decrease, direction
+                        index, designation, cost increase, cost decrease, direction, observed
                       
                         e.g.:
 
-                        0,id,,,
-                        1,dir,0,2,-1
-                        2,dir,3,0,1
-                        3,dir,4,3,0
-                        4,unch,,,
-                        5,ind,,,
+                        0,id,,,obs
+                        1,dir,0,2,-1,
+                        2,dir,3,0,1,obs
+                        3,dir,4,3,0,
+                        4,unch,,,obs
+                        5,ind,,,,
                          ...
-                        p,target,,,
+                        p,target,,,,
     """
-
+	
+	obs_indices = []
     unch_indices = []
     ind_indices = []
     dir_indices = []
@@ -83,6 +84,9 @@ def load_indices(data_path,util_file):
     with open(data_path+util_file,'rU') as rF:
         fReader = csv.reader(rF,delimiter=',')
         for i, row in enumerate(fReader):
+			if row[5] == 'obs':
+				obs_indices.append(int(row[0]))
+				
             if row[1] == 'id':
                 id_ind = int(row[0])
             elif row[1] == 'target':
@@ -99,10 +103,10 @@ def load_indices(data_path,util_file):
             else:
                 raise Exception("Problem loading index file. Unrecognized designation '{}' found on row\
                           {}".format(row[0],str(i+1)))
+				
+    return obs_indices, unch_indices,ind_indices,dir_indices,cost_inc,cost_dec,direct_chg,id_ind,target_ind
 
-    return unch_indices,ind_indices,dir_indices,cost_inc,cost_dec,direct_chg,id_ind,target_ind
-
-def load_data(data_path,data_file,file_type="csv",unchange_indices=[],indirect_indices=[],
+def load_data(data_path,data_file,file_type="csv",obs_indices=[],unchange_indices=[],indirect_indices=[],
                 direct_indices=[],id_ind=0,target_ind=-1,seed=1234,val_prop=0.10,test_prop=0.10,
                 opt_params={},save_file=""):
 
@@ -125,7 +129,9 @@ def load_data(data_path,data_file,file_type="csv",unchange_indices=[],indirect_i
                    (2) 'pkl' file type is assumed to have been generated
                         according to this code.
         
-        unchange_indices: The indices onf the unchangeable features.
+        obs_indices: The indices of the observable features.
+        
+        unchange_indices: The indices of the unchangeable features.
 
         indirect_indices: The indices of the indirectly changeable features.
  
@@ -156,6 +162,7 @@ def load_data(data_path,data_file,file_type="csv",unchange_indices=[],indirect_i
 
     id_col_name = header[id_ind]
     target_col_name = header[target_ind]
+    obs_col_names = header[obs_indices]
     indirect_col_names = header[indirect_indices]
     direct_col_names = header[direct_indices]
     unchange_col_names = header[unchange_indices]
@@ -165,6 +172,7 @@ def load_data(data_path,data_file,file_type="csv",unchange_indices=[],indirect_i
     X_data = dset_df.drop([id_col_name, target_col_name],axis=1)
     nan_data = nan_df.drop([id_col_name, target_col_name],axis=1)
 
+	obs_indices = [X_data.columns.get_loc(c) for c in obs_col_names]
     unchange_indices = [X_data.columns.get_loc(c) for c in unchange_col_names]
     indirect_indices = [X_data.columns.get_loc(c) for c in indirect_col_names]
     direct_indices = [X_data.columns.get_loc(c) for c in direct_col_names]
@@ -239,6 +247,7 @@ def load_data(data_path,data_file,file_type="csv",unchange_indices=[],indirect_i
                    'min_X':min_X,
                    'max_X':max_X,
                    'opt_params':opt_params,
+                   'xO_ind':obs_indices,
                    'xU_ind':unchange_indices,
                    'xI_ind':indirect_indices,
                    'xD_ind':direct_indices
