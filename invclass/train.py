@@ -118,7 +118,12 @@ def main(argv):
                           target_ind=target_ind,val_prop=FLAGS.val_prop,
                           test_prop=FLAGS.test_prop,opt_params=opt_params,
                           save_file=FLAGS.save_file)
-
+	
+    print(f'Observable indices: {obs_indices}')
+    print(f'Unchangeable indices: {unch_indices}')
+    print(f'Indirectly changeable indices: {indir_indices}')
+    print(f'Directly changeable indices: {dir_indices}')
+	
     print("Done loading. Training model...")
     train(data_dict=data_dict)
 
