@@ -20,19 +20,25 @@ FLAGS = flags.FLAGS
 def obj_fun(model, inputs, labels, obs_indices):
     prediction = model(inputs)
     observed = tf.cast(labels, tf.float32)
+    
+    unch_len = inputs.shape[2] - labels.shape[2]
+    print(inputs.shape)
+    print(prediction.shape)
+    adj_obs_indices = [ind - unch_len for ind in obs_indices]
+    print(adj_obs_indices)
 
     loss = tf.norm(prediction[:,-1,:] - observed[:,-1,:], ord='euclidean')
     
     return loss
 
-def inv_gradient(model, inputs, labels):
+def inv_gradient(model, inputs, labels, obs_indices):
     if type(inputs) == np.ndarray:
         inputs = tf.convert_to_tensor(inputs, dtype=tf.float32)
 
     with tf.GradientTape() as t:
         t.watch(inputs)
 
-        loss = obj_fun(model, inputs, labels)
+        loss = obj_fun(model, inputs, labels, obs_indices)
 
         grads = t.gradient(loss,inputs).numpy()
 
