@@ -24,7 +24,7 @@ def obj_fun(model, inputs, labels, obs_indices):
     unch_len = inputs.shape[2] - labels.shape[2]
     adj_obs_indices = [ind - unch_len for ind in obs_indices]
 
-    loss = tf.norm(prediction[:,-1,:] - observed[:,-1,:], ord='euclidean')
+    loss = tf.norm(prediction[:,-1,adj_obs_indices] - observed[:,-1,adj_obs_indices], ord='euclidean')
     
     return loss
 
