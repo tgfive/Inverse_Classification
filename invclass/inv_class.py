@@ -106,7 +106,7 @@ def inv_class(reg_model, ind_model, budget_inputs, labels, param_dict):
         bud_iter+=1
         
         #Compute initial gradients for setting the bounds of ambig. d
-        reg_grad_full = inv_gradient(reg_model, x_init, inv_labels)[0]
+        reg_grad_full = inv_gradient(reg_model, x_init, inv_labels, xO_i)[0]
         #Compute the gradient of the ind_model
         ind_grad_full = inv_gradient_ind(ind_model, xU_xD, num_loss=len(xI_i))
         #Designate partial gradients
@@ -144,7 +144,7 @@ def inv_class(reg_model, ind_model, budget_inputs, labels, param_dict):
         while tot_iters < FLAGS.max_iters and diff > FLAGS.grad_tol:
 
             #Compute the gradient of the model wrt. x
-            reg_grad_full = inv_gradient(reg_model, full_opt_x, inv_labels)[0]
+            reg_grad_full = inv_gradient(reg_model, full_opt_x, inv_labels, xO_i)[0]
             #Compute the gradient of the ind_model
             ind_grad_full = inv_gradient_ind(ind_model, xU_xD_opt, num_loss=len(xI_i))
             #Designate partial gradients
@@ -189,7 +189,7 @@ def inv_class(reg_model, ind_model, budget_inputs, labels, param_dict):
                 gStep *= 2
                 
                 #Compute the gradient of the model wrt. x
-                reg_grad_full = inv_gradient(reg_model, full_opt_x, inv_labels)[0]
+                reg_grad_full = inv_gradient(reg_model, full_opt_x, inv_labels, xO_i)[0]
                 #Compute the gradient of the ind_model
                 ind_grad_full = inv_gradient_ind(ind_model, xU_xD_opt, num_loss=len(xI_i))
                 #Designate partial gradients
@@ -279,7 +279,7 @@ def main(argv):
     inv_inds = list(range(inputs.shape[0]))
 
     #Take gradient of all instances to test for zero gradients
-    grads = inv_gradient(reg_model, inputs, labels)
+    grads = inv_gradient(reg_model, inputs, labels, xO_ind)
     nz_grads = np.nonzero(grads)
     nz_inds = list(set(nz_grads[0]))
     print("Total test instances w/ non-zero grads: {}".format(len(nz_inds)),
