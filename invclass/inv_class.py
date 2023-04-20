@@ -80,6 +80,9 @@ def inv_class(reg_model, ind_model, budget_inputs, labels, param_dict):
     for bud_num, b in enumerate(budgets):
         inv_inputs = inv_budget_inputs[bud_num]
 
+        ind_labels = inv_labels[:,:,xI_i]
+        obs_indices_ind = [ind - len(xU_i) for ind in xO_i]
+
         xU_xD = np.hstack([inv_inputs[:,xU_i], inv_inputs[:,xD_i]])
         #Initial prediction of indirect
         xI_est = ind_model.predict(xU_xD)
@@ -108,7 +111,7 @@ def inv_class(reg_model, ind_model, budget_inputs, labels, param_dict):
         #Compute initial gradients for setting the bounds of ambig. d
         reg_grad_full = inv_gradient(reg_model, x_init, inv_labels, xO_i)[0]
         #Compute the gradient of the ind_model
-        ind_grad_full = inv_gradient_ind(ind_model, xU_xD, num_loss=len(xI_i))
+        ind_grad_full = inv_gradient_ind(ind_model, xU_xD, ind_labels, obs_indices_ind, num_loss=len(xI_i))
         #Designate partial gradients
         xD_grad = reg_grad_full[:,xD_i]
         xI_grad = reg_grad_full[:,xI_i]
@@ -146,7 +149,7 @@ def inv_class(reg_model, ind_model, budget_inputs, labels, param_dict):
             #Compute the gradient of the model wrt. x
             reg_grad_full = inv_gradient(reg_model, full_opt_x, inv_labels, xO_i)[0]
             #Compute the gradient of the ind_model
-            ind_grad_full = inv_gradient_ind(ind_model, xU_xD_opt, num_loss=len(xI_i))
+            ind_grad_full = inv_gradient_ind(ind_model, xU_xD_opt, ind_labels, obs_indices_ind, num_loss=len(xI_i))
             #Designate partial gradients
             xD_grad = reg_grad_full[:,xD_i]
             xI_grad = reg_grad_full[:,xI_i]
@@ -191,7 +194,7 @@ def inv_class(reg_model, ind_model, budget_inputs, labels, param_dict):
                 #Compute the gradient of the model wrt. x
                 reg_grad_full = inv_gradient(reg_model, full_opt_x, inv_labels, xO_i)[0]
                 #Compute the gradient of the ind_model
-                ind_grad_full = inv_gradient_ind(ind_model, xU_xD_opt, num_loss=len(xI_i))
+                ind_grad_full = inv_gradient_ind(ind_model, xU_xD_opt, ind_labels, obs_indices_ind, num_loss=len(xI_i))
                 #Designate partial gradients
                 xD_grad = reg_grad_full[:,xD_i]
                 xI_grad = reg_grad_full[:,xI_i]

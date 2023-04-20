@@ -24,7 +24,10 @@ def obj_fun(model, inputs, labels, obs_indices):
     unch_len = inputs.shape[2] - labels.shape[2]
     adj_obs_indices = [ind - unch_len for ind in obs_indices]
 
-    loss = tf.norm(prediction[:,-1,adj_obs_indices] - observed[:,-1,adj_obs_indices], ord='euclidean')
+    diff = prediction[:,-1,:] - observed[:,-1,:]
+    diff_obs = tf.gather(diff, indices=obs_indices, axis=1)
+    
+    loss = tf.norm(diff_obs, ord='euclidean')
     
     return loss
 
@@ -41,20 +44,18 @@ def inv_gradient(model, inputs, labels, obs_indices):
 
         return grads
     
-def inv_gradient_ind(model, x, num_loss=0):
-    x_tensor = tf.convert_to_tensor(x, dtype=tf.float32)
-    #print('x_tensor:', x_tensor)
+def inv_gradient_ind(model, inputs, labels, obs_indices, num_loss=0):
+    inputs = tf.convert_to_tensor(inputs, dtype=tf.float32)
 
     grad = []
     for i in range(num_loss):
         with tf.GradientTape() as t:
-            t.watch(x_tensor)
-            #print('output:', model(x_tensor))
+            t.watch(inputs)
+            #print('output:', model(inputs).shape)
 
-            loss = model(x_tensor)[:,i]
+            loss = model(inputs)[:,i]
             #print('loss:', loss)
-            grad.append(t.gradient(loss,x_tensor).numpy()[0])
-    #print('grad:', np.array(grad))
+            grad.append(t.gradient(loss,inputs).numpy()[0])
     return np.array(grad)
 
 def set_parameters(data_dict):
