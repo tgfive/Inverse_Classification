@@ -1,27 +1,27 @@
-0,id,,,
-1,unch,,,
-2,unch,,,
-3,unch,,,
-4,unch,,,
-5,unch,,,
-6,unch,,,
-7,unch,,,
-8,ind,,,
-9,ind,,,
-10,ind,,,
-11,ind,,,
-12,ind,,,
-13,ind,,,
-14,ind,,,
-15,ind,,,
-16,ind,,,
-17,ind,,,
-18,dir,5,0,1
-19,dir,0,5,-1
-20,dir,4,0,1
-21,dir,8,0,1
-22,dir,0,7,-1
-23,dir,0,6,-1
-24,dir,3,0,1
-25,dir,3,0,1
-26,target,,,
+0,id,,,,,
+1,unch,,,,,lat
+2,unch,,,,,lon
+3,unch,,,,,elvt
+4,unch,,,,,Day sin
+5,unch,,,,,Day cos
+6,unch,,,,,Year sin
+7,unch,,,,,Year cos
+8,ind,,,,,smax
+9,ind,,,,,smin
+10,ind,,,,,tmax
+11,ind,,,,obs,tmin
+12,ind,,,,,dmax
+13,ind,,,,,dmin
+14,ind,,,,,hmax
+15,ind,,,,obs,hmin
+16,ind,,,,,Gx
+17,ind,,,,,Gy
+18,dir,5,0,1,,prcp
+19,dir,0,5,-1,,stp
+20,dir,4,0,1,,gbrd
+21,dir,8,0,1,,temp
+22,dir,0,7,-1,,dewp
+23,dir,0,6,-1,,hmdy
+24,dir,3,0,1,,Wx
+25,dir,3,0,1,,Wy
+26,target,,,,,

@@ -3,14 +3,14 @@ import numpy as np
 
 #PATH = ''
 PATH = '../brazil_data/'
-OUT = 'A036_weather'
+OUT = 'A047_weather'
 FILE = 'central_west.csv'
 DESC = 'columns_description.csv'
 
-STATION = 'A036'
+STATION = 'A047'
 
 SAMPLE = True
-SAMPLE_SIZE = 1000
+SAMPLE_SIZE = 72
 
 print('Loading data...')
 
